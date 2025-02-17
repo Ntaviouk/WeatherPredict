@@ -1,13 +1,19 @@
-import requests
+from meteostat import Daily, Point
+from datetime import datetime
 
-API_KEY = "34ee2c0ecbe228d7c8e6e25e7354b09a"
-city = "Kyiv"
-url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
 
-response = requests.get(url)
-data = response.json()
+def get_weather_data(param):
+    kyiv = Point(50.45, 30.52)
+    start = datetime(2022, 5, 1)
+    end = datetime(2024, 12, 1)
+    data = Daily(kyiv, start, end).fetch()
+    # print(data[['prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun','tavg']])
+    if param in data.columns:  # Перевіряємо, чи є параметр у даних
+        return data[param].fillna(0).tolist()  # Замінюємо NaN на 0 і конвертуємо в список
+    else:
+        raise ValueError(f"Параметр '{param}' не знайдено у даних!")
 
-print("Температура:", data["main"]["temp"])
-print("Тиск:", data["main"]["pressure"])
-print("Вологість:", data["main"]["humidity"])
-print("Швидкість вітру:", data["wind"]["speed"])
+
+# get_weather_data("snow")
+
+
