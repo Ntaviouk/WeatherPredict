@@ -1,8 +1,9 @@
+# temperature_prediction.py
 import pandas as pd
+import numpy as np
 import xgboost as xgb
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split, GridSearchCV
-
 
 def generate_model(prcp, snow, wdir, wspd, wpgt, pres, tsun, tavg):
     data = {
@@ -15,7 +16,15 @@ def generate_model(prcp, snow, wdir, wspd, wpgt, pres, tsun, tavg):
         'tsun': tsun,
         'tavg': tavg
     }
+
+    # Створюємо DataFrame
     df = pd.DataFrame(data)
+
+    # Замінюємо всі pd.NA, None, 'nan', '' на np.nan
+    df = df.replace({pd.NA: np.nan, 'nan': np.nan, None: np.nan, '': np.nan})
+
+    # Приводимо все до float
+    df = df.astype(float)
 
     X = df[['prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun']]
     y = df['tavg']
@@ -28,7 +37,7 @@ def generate_model(prcp, snow, wdir, wspd, wpgt, pres, tsun, tavg):
         'max_depth': [3, 5, 7]
     }
 
-    model = xgb.XGBRegressor(random_state=42)
+    model = xgb.XGBRegressor(random_state=42, enable_categorical=False, missing=np.nan)
     grid_search = GridSearchCV(model, param_grid, cv=3, scoring='neg_mean_absolute_error', verbose=1, n_jobs=-1)
     grid_search.fit(X_train, y_train)
 
@@ -41,11 +50,13 @@ def generate_model(prcp, snow, wdir, wspd, wpgt, pres, tsun, tavg):
     best_model.save_model('temperature_xgb_model.json')
 
 
+
 def predict_temperature(prcp, snow, wdir, wspd, wpgt, pres, tsun):
-    model = xgb.XGBRegressor()
+    model = xgb.XGBRegressor(enable_categorical=False, missing=np.nan)
     model.load_model('temperature_xgb_model.json')
 
     input_data = pd.DataFrame([[prcp, snow, wdir, wspd, wpgt, pres, tsun]],
-                              columns=['prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun'])
+                              columns=['prcp', 'snow', 'wdir', 'wspd', 'wpgt', 'pres', 'tsun']).astype(float)
+
     prediction = model.predict(input_data)
     return prediction[0]

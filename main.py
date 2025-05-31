@@ -1,3 +1,4 @@
+# main.py
 from temperature_prediction import generate_model, predict_temperature
 from scraper import get_weather_data as gd
 
